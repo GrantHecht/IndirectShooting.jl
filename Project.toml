@@ -3,6 +3,9 @@ uuid = "552ddee8-f2c8-412c-9a93-d98e9622e980"
 authors = ["Grant Hecht"]
 version = "0.1.0"
 
+[deps]
+NLsolve = "2774e3e8-f4cf-5e23-947b-6d7e65073b56"
+
 [compat]
 julia = "1.6"
 

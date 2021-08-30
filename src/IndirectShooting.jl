@@ -1,5 +1,9 @@
 module IndirectShooting
 
-# Write your package code here.
+using NLsolve
+
+# Includes
+include("ShootingSolver.jl")
+include("FSSSolver.jl")
 
 end
