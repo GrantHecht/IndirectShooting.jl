@@ -11,9 +11,12 @@ struct ShootingDataManager
     outVec::Vector{Float64}
 end
 
-function ShootingDataManager()
-    undefVec = Vector{Float64}(undef, 0)
-    ShootingDataManager(undefVec, undefVec, undefVec, undefVec, undefVec)
+function ShootingDataManager() 
+    ShootingDataManager(Vector{Float64}(undef, 0), 
+                        Vector{Float64}(undef, 0),
+                        Vector{Float64}(undef, 0),
+                        Vector{Float64}(undef, 0),
+                        Vector{Float64}(undef, 0))
 end
 
 function SetInitGuessData!(sdm::ShootingDataManager, igv::AbstractVector)

@@ -17,9 +17,7 @@ struct FSSSolver{NLEF} <: ShootingSolver
 end
 
 # Constructor
-function FSSSolver(initGuess, ics, fcs, bvpFuncNoSTM, bvpFuncWSTM,
-                   bvpFuncNoSTMinPlace = false, 
-                   bvpFuncWSTMinPlace = true)
+function FSSSolver(initGuess, ics, fcs, bvpFuncNoSTM, bvpFuncWSTM)
 
     # Get size of variables vector
     m = length(initGuess)
@@ -41,20 +39,18 @@ function FSSSolver(initGuess, ics, fcs, bvpFuncNoSTM, bvpFuncWSTM,
     end
 
     # Configure NLsolve.jl input function
-    nlEqs = only_fj!((F,J,λ) -> fssNLEqFunc!(F, J, λ, bvpFuncNoSTM, bvpFuncWSTM,
-        bvpFuncNoSTMinPlace, bvpFuncWSTMinPlace, sdm))
+    nlEqs = only_fj!((F,J,λ) -> fssNLEqFunc!(F, J, λ, bvpFuncNoSTM, bvpFuncWSTM, sdm))
 
     FSSSolver(sdm, nlEqs)
 end
 
 function solve!(solver::FSSSolver)
-    sol = nlsolve(solver.nlEqs, solver.sdm.initGuessData)
+    sol = nlsolve(solver.nlEqs, solver.sdm.initGuessData; show_trace = true)
 end
 
 # NLsolve.jl function
 function fssNLEqFunc!(F::Union{Nothing,AbstractArray}, J::Union{Nothing,AbstractArray},
                       λ::AbstractArray, bvpFuncNoSTM, bvpFuncWSTM, 
-                      bvpFuncNoSTMinPlace::Bool, bvpFuncWSTMinPlace::Bool,
                       sdm::ShootingDataManager)
 
     # Fill J with zeros if necessary
@@ -73,11 +69,7 @@ function fssNLEqFunc!(F::Union{Nothing,AbstractArray}, J::Union{Nothing,Abstract
         sdm.inVec[m+1:n] .= λ
 
         # Evaluate boundary value function
-        if bvpFuncNoSTMinPlace 
-            @views bvpFuncNoSTM(sdm.outVec[1:n], sdm.inVec[1:n])
-        else
-            @views sdm.outVec[1:n] .= bvpFuncNoSTM(sdm.inVec[1:n])
-        end
+        @views sdm.outVec[1:n] .= bvpFuncNoSTM(sdm.inVec[1:n])
 
         # Fill F (This is not generalized!)
         @views F[1:6] .= sdm.outVec[1:6] .- sdm.fcs[1:6]
@@ -94,11 +86,7 @@ function fssNLEqFunc!(F::Union{Nothing,AbstractArray}, J::Union{Nothing,Abstract
         # !!! END BLOCK
 
         # Evaluate boundary value function
-        if bvpFuncWSTMinPlace
-            bvpWSTM(sdm.outVec, sdm.inVec)
-        else
-            sdm.outVec .= bvpFuncWSTM(sdm.inVec)
-        end
+        sdm.outVec .= bvpFuncWSTM(sdm.inVec)
 
         # Fill F (This is not generalized!)
         if F !== nothing 
