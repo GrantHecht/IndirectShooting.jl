@@ -7,4 +7,8 @@ include("ShootingDataManager.jl")
 include("ShootingSolver.jl")
 include("FSSSolver.jl")
 
+# Exports
+export FSSSolver
+export solve!
+
 end
