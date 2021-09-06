@@ -14,6 +14,10 @@ struct ShootingDataManager <: AbstractShootingDataManager
     # Preallocated function input vectors
     inVec::Vector{Float64}
     outVec::Vector{Float64}
+
+    # Solution data
+    sol::Vector{Float64}
+    cflag::Bool
 end
 
 function ShootingDataManager() 
@@ -21,7 +25,9 @@ function ShootingDataManager()
                         Vector{Float64}(undef, 0),
                         Vector{Float64}(undef, 0),
                         Vector{Float64}(undef, 0),
-                        Vector{Float64}(undef, 0))
+                        Vector{Float64}(undef, 0),
+                        Vector{Float64}(undef, 0),
+                        false)
 end
 
 # ShootingHomotopyDataManager: Shooting data manager when performing
@@ -43,6 +49,7 @@ struct ShootingHomotopyDataManager <: AbstractShootingDataManager
 
     # continuation solution vector
     sols::Vector{Vector{Float64}}
+    cflags::Vector{Bool}
 end
 
 function ShootingHomotopyDataManager() 
@@ -52,7 +59,8 @@ function ShootingHomotopyDataManager()
                         Vector{Float64}(undef, 0),
                         Vector{Float64}(undef, 0),
                         Vector{Float64}(undef, 0),
-                        Vector{Vector{Float64}}(undef, 0))
+                        Vector{Vector{Float64}}(undef, 0),
+                        Vector{Bool}(undef, 0))
 end
 
 function SetInitGuessData!(sdm::AbstractShootingDataManager, igv::AbstractVector)
@@ -122,16 +130,46 @@ function Initialize!(sdm::AbstractShootingDataManager)
     return nothing 
 end
 
+function Initialize!(sdm::ShootingDataManager)
+    m = length(sdm.initGuessData)
+    resize!(sdm.sol, m)
+end
+
 function Initialize!(sdm::ShootingHomotopyDataManager)
     # Need to size sols vector of vectors
     n = length(sdm.ϵs)
     m = length(sdm.initGuessData)
+    resize!(sdm.cflags, n)
+    resize!(sdm.sols, n)
     for i in 1:n
-        push!(sdm.sols, Vector{Float64}(undef, m))
+        sdm.sols[i] = Vector{Float64}(undef, m)
     end
+    #for i in 1:n
+    #    push!(sdm.sols, Vector{Float64}(undef, m))
+    #end
     return nothing 
+end
+
+function GetSolution(sdm::ShootingDataManager)
+    return sdm.sol
 end
 
 function GetHomotopySolutionVector(sdm::ShootingHomotopyDataManager)
     return sdm.sols
+end
+
+function GetHomotopyConvergenceFlags(sdm::ShootingHomotopyDataManager)
+    return sdm.cflags
+end
+
+function GetInitialGuessConverged(sdm::ShootingDataManager)
+    return sdm.cflag 
+end
+
+function GetInitialGuessConverged(sdm::ShootingHomotopyDataManager)
+    return sdm.cflags[1]
+end
+
+function GetHomotopyConverged(sdm::ShootingHomotopyDataManager)
+    return sdm.cflags[end]
 end

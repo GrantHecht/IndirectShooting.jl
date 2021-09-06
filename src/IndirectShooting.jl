@@ -11,4 +11,12 @@ include("FSSSolver.jl")
 export FSSSolver
 export solve!
 
+export initializeData!
+export GetInitialGuessConverged
+export GetHomotopyConverged
+export GetSolution 
+export GetHomotopySolutionVector
+export GetHomotopyParams
+export GetHomotopyConvergenceFlags
+
 end
