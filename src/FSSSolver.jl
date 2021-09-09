@@ -100,16 +100,16 @@ function initializeData!(solver::FSSSolver, initGuess::AbstractVector)
     return nothing
 end
 
-function solve!(solver::AbstractFSSSolver{ShootingDataManager}; factor = 1.0, ftol = 1e-8)
+function solve!(solver::AbstractFSSSolver{ShootingDataManager}; factor = 1.0, ftol = 1e-8, showTrace = true,convergenceAttempts = 4)
     sdm = solver.sdm
     sol = nlsolve(only_fj!(solver.nlEqs), GetInitGuessData(sdm);
-        show_trace = true, factor = factor, ftol =ftol)
+        show_trace = showTrace, factor = factor, ftol =ftol)
     solver.sol .= sol.zero
     sdm.cflag = (sol.residual_norm < ftol*100.0)
     return nothing
 end
 
-function solve!(solver::AbstractFSSSolver{ShootingHomotopyDataManager}; factor = 1.0, ftol = 1e-8, convergenceAttempts = 4)
+function solve!(solver::AbstractFSSSolver{ShootingHomotopyDataManager}; factor = 1.0, ftol = 1e-8, showTrace = true, convergenceAttempts = 4)
     sdm         = solver.sdm
     ϵs          = GetHomotopyParams(sdm)
     sols        = GetHomotopySolutionVector(sdm)
@@ -121,7 +121,7 @@ function solve!(solver::AbstractFSSSolver{ShootingHomotopyDataManager}; factor =
         ϵ = ϵs[i]
         if i == 1
             sol = nlsolve(only_fj!((F,J,λ)->solver.nlEqs(F,J,λ,ϵ)), 
-                GetInitGuessData(sdm); show_trace = true, factor = factor, ftol = ftol)
+                GetInitGuessData(sdm); show_trace = showTrace, factor = factor, ftol = ftol)
         else
             println("Shooting for ϵ = " * string(ϵ))
             if cFlag == true
@@ -160,7 +160,8 @@ function solve!(solver::AbstractFSSSolver{ShootingHomotopyDataManager}; factor =
                 end
                 if cFlag == true
                     success = true
-                    sols[end] .= localSol
+                    sols[end]  .= localSol
+                    cflags[end] = true
                 end
             end
         end
