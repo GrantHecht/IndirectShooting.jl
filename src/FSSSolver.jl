@@ -143,11 +143,12 @@ function solve!(solver::AbstractFSSSolver{ShootingHomotopyDataManager}; factor =
             attempts    = 0
             success     = false
             localSol    = Vector{Float64}(undef, length(sols[1]))
+            localSol    .= sols[end-1]
+            localSolϵ   = ϵs[end-1]
             while success == false && attempts <= convergenceAttempts
                 attempts    += 1
                 numSteps    = 2 + attempts
-                localSol    .= sols[end-1]
-                for ϵ in LinRange(ϵs[end-1], ϵs[end], numSteps)[2:end] # This is allocating twice. Might want to improve but hitting this edge case is rare...
+                for ϵ in LinRange(localSolϵ, ϵs[end], numSteps)[2:end] # This is allocating twice. Might want to improve but hitting this edge case is rare...
                     println("Shooting for ϵ = " * string(ϵ))
                     sol = nlsolve(only_fj!((F,J,λ)->solver.nlEqs(F,J,λ,ϵ)),
                         localSol; show_trace = true, factor = factor, ftol = ftol)
@@ -156,6 +157,7 @@ function solve!(solver::AbstractFSSSolver{ShootingHomotopyDataManager}; factor =
                         break
                     else
                         localSol .= sol.zero
+                        localSolϵ = ϵ
                     end
                 end
                 if cFlag == true
