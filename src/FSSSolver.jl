@@ -44,7 +44,7 @@ function FSSSolver(initGuess, ics, fcs, bvpFuncNoSTM, bvpFuncWSTM;
     inVec = GetInputVec(sdm)
     inVec[1:m]      .= ics
     inVec[m+1:n]    .= initGuess
-    inVec[n+1:end]  .= 0.0
+    inVec[n+1:end]  .= 0.00
     for i in 1:n
         inVec[n + i + (i-1)*n] = 1.0
     end
