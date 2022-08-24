@@ -20,7 +20,7 @@ struct FSSSolver{SDMT,NLEF} <: AbstractFSSSolver{SDMT}
 end
 
 # Constructor
-function FSSSolver(initGuess, ics, fcs, bvpFuncNoSTM, bvpFuncWSTM;
+function FSSSolver(initGuess, tspan, ics, fcs, bvpFuncNoSTM, bvpFuncWSTM;
     homotopy = false, homotopyParamVec = [1.0])
 
     # Get size of variables vector
@@ -51,15 +51,15 @@ function FSSSolver(initGuess, ics, fcs, bvpFuncNoSTM, bvpFuncWSTM;
 
     # Configure NLsolve.jl input function
     if homotopy == false
-        nlEqs = (F,J,λ) -> fssNLEqFunc!(F, J, λ, bvpFuncNoSTM, bvpFuncWSTM, sdm)
+        nlEqs = (F,J,λ) -> fssNLEqFunc!(F, J, λ, bvpFuncNoSTM, bvpFuncWSTM, tspan, sdm)
     else 
-        nlEqs = (F,J,λ,ϵ) -> fssHomotopyNLEqFunc!(F, J, λ, ϵ, bvpFuncNoSTM, bvpFuncWSTM, sdm)
+        nlEqs = (F,J,λ,ϵ) -> fssHomotopyNLEqFunc!(F, J, λ, ϵ, bvpFuncNoSTM, bvpFuncWSTM, tspan, sdm)
     end
 
     FSSSolver(sdm, nlEqs)
 end
 
-function FSSSolver(ics, fcs, bvpFuncNoSTM, bvpFuncWSTM;
+function FSSSolver(tspan, ics, fcs, bvpFuncNoSTM, bvpFuncWSTM;
     homotopy = false, homotopyParamVec = [1.0])
 
     # Set up ShootingDataManager
@@ -74,9 +74,9 @@ function FSSSolver(ics, fcs, bvpFuncNoSTM, bvpFuncWSTM;
 
     # Configure NLsolve.jl input function
     if homotopy == false
-        nlEqs = (F,J,λ) -> fssNLEqFunc!(F, J, λ, bvpFuncNoSTM, bvpFuncWSTM, sdm)
+        nlEqs = (F,J,λ) -> fssNLEqFunc!(F, J, λ, bvpFuncNoSTM, bvpFuncWSTM, tspan, sdm)
     else 
-        nlEqs = (F,J,λ,ϵ) -> fssHomotopyNLEqFunc!(F, J, λ, ϵ, bvpFuncNoSTM, bvpFuncWSTM, sdm)
+        nlEqs = (F,J,λ,ϵ) -> fssHomotopyNLEqFunc!(F, J, λ, ϵ, bvpFuncNoSTM, bvpFuncWSTM, tspan, sdm)
     end
 
     FSSSolver(sdm, nlEqs)
@@ -116,7 +116,7 @@ function solve!(solver::AbstractFSSSolver{ShootingHomotopyDataManager}; factor =
     cflags      = GetHomotopyConvergenceFlags(sdm)
     lastConvIdx = 1
     cFlag       = false
-    @inbounds for i in 1:length(ϵs)
+    @inbounds for i in eachindex(ϵs)
         # Get homotopy parameter and solve
         ϵ = ϵs[i]
         if i == 1
@@ -178,7 +178,7 @@ end
 
 # NLsolve.jl function
 function fssNLEqFunc!(F::Union{Nothing,AbstractArray}, J::Union{Nothing,AbstractArray},
-                      λ::AbstractArray, bvpFuncNoSTM, bvpFuncWSTM, 
+                      λ::AbstractArray, bvpFuncNoSTM, bvpFuncWSTM, tspan,
                       sdm::ShootingDataManager)
 
     # Get data from ShootingDataManager
@@ -202,7 +202,7 @@ function fssNLEqFunc!(F::Union{Nothing,AbstractArray}, J::Union{Nothing,Abstract
         z0[m+1:n] .= λ
 
         # Evaluate boundary value function
-        @views zf[1:n] .= bvpFuncNoSTM(z0[1:n])
+        @views zf[1:n] .= bvpFuncNoSTM(z0[1:n], tspan)
 
         # Fill F (This is not generalized!)
         @views F[1:6] .= zf[1:6] .- fc[1:6]
@@ -212,7 +212,7 @@ function fssNLEqFunc!(F::Union{Nothing,AbstractArray}, J::Union{Nothing,Abstract
         z0[m+1:n] .= λ
 n
         # Evaluate boundary value function with STM
-        zf .= bvpFuncWSTM(z0)
+        zf .= bvpFuncWSTM(z0, tspan)
 
         # Fill F (This is not generalized!)
         if F !== nothing 
@@ -230,7 +230,7 @@ end
 
 # NLsolve.jl function
 function fssHomotopyNLEqFunc!(F::Union{Nothing,AbstractArray}, J::Union{Nothing,AbstractArray},
-                              λ::AbstractArray, ϵ, bvpFuncNoSTM, bvpFuncWSTM, 
+                              λ::AbstractArray, ϵ, bvpFuncNoSTM, bvpFuncWSTM, tspan, 
                               sdm::ShootingHomotopyDataManager)
 
     # Get data from ShootingDataManager
@@ -254,7 +254,7 @@ function fssHomotopyNLEqFunc!(F::Union{Nothing,AbstractArray}, J::Union{Nothing,
         z0[m+1:n] .= λ
 
         # Evaluate boundary value function
-        @views zf[1:n] .= bvpFuncNoSTM(z0[1:n], ϵ)
+        @views zf[1:n] .= bvpFuncNoSTM(z0[1:n], tspan, ϵ)
 
         # Fill F (This is not generalized!)
         @views F[1:6] .= zf[1:6] .- fc[1:6]
@@ -264,7 +264,7 @@ function fssHomotopyNLEqFunc!(F::Union{Nothing,AbstractArray}, J::Union{Nothing,
         z0[m+1:n] .= λ
 n
         # Evaluate boundary value function with STM
-        zf .= bvpFuncWSTM(z0, ϵ)
+        zf .= bvpFuncWSTM(z0, tspan, ϵ)
 
         # Fill F (This is not generalized!)
         if F !== nothing 
