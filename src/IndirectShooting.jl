@@ -6,9 +6,11 @@ using NLsolve
 include("ShootingDataManager.jl")
 include("ShootingSolver.jl")
 include("FSSSolver.jl")
+include("FMSSolver.jl")
 
 # Exports
 export FSSSolver
+export FMSSolver
 export solve!
 
 export initializeData!

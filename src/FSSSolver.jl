@@ -10,13 +10,11 @@
 abstract type AbstractFSSSolver{SDMT <: AbstractShootingDataManager} end
 
 struct FSSSolver{SDMT,NLEF} <: AbstractFSSSolver{SDMT}
-
     # Shooting Data Manager 
     sdm::SDMT
 
-    # Non-linear equations function
+    # Non-linear equations
     nlEqs::NLEF
-
 end
 
 # Constructor
@@ -109,7 +107,8 @@ function solve!(solver::AbstractFSSSolver{ShootingDataManager}; factor = 1.0, ft
     return nothing
 end
 
-function solve!(solver::AbstractFSSSolver{ShootingHomotopyDataManager}; factor = 1.0, ftol = 1e-8, showTrace = true, convergenceAttempts = 4)
+function solve!(solver::AbstractFSSSolver{ShootingHomotopyDataManager}; 
+    factor = 1.0, ftol = 1e-8, showTrace = true, convergenceAttempts = 4)
     sdm         = solver.sdm
     ϵs          = GetHomotopyParams(sdm)
     sols        = GetHomotopySolutionVector(sdm)
@@ -128,7 +127,7 @@ function solve!(solver::AbstractFSSSolver{ShootingHomotopyDataManager}; factor =
                 lastConvIdx = i - 1
             end
             sol = nlsolve(only_fj!((F,J,λ)->solver.nlEqs(F,J,λ,ϵ)),
-                sols[lastConvIdx]; show_trace = true, factor = factor, ftol = ftol)
+                sols[lastConvIdx]; show_trace = showTrace, factor = factor, ftol = ftol)
         end
 
         # Save solution
