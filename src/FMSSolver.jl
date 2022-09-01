@@ -24,7 +24,7 @@ function FMSSolver(tspan, ics, fcs, bvpFuncNoSTM, bvpFuncWSTM;
     nSeg = 4, homotopy = false, homotopyParamVec = [1.0])
 
     # Get size of state/co-state vector
-    m = length(initGuess)
+    m = 7
     n = 2*m
 
     # Set up ShootingDataManager
@@ -69,15 +69,15 @@ function initializeData!(solver::FMSSolver, initGuess::AbstractVector)
     ts      = zeros(solver.nSeg + 1)
     ts[1]   = solver.tspan[1]
     ts[end] = solver.tspan[2]
-    for i in 1:nSeg - 1
-        ts[i + 1] = ts[i] + (ts[end] - ts[1]) / nSeg
+    for i in 1:solver.nSeg - 1
+        ts[i + 1] = ts[i] + (ts[end] - ts[1]) / solver.nSeg
     end
 
     # Compute full initial guess vector
     xs      = zeros(m + (solver.nSeg - 1)*n)
     xs[1:m] .= initGuess
     y       = zeros(n)
-    for i in 1:nSeg - 1
+    for i in 1:solver.nSeg - 1
         if i == 1
             # Construct initial state vector
             y[1:m]  .= GetInitConditions(solver.sdm)
@@ -120,7 +120,7 @@ function initializeData!(solver::FMSSolver, initGuess::AbstractVector)
     Initialize!(solver.sdm)
 
     # Set input vector identity matrix portion
-    inVec   = GetInputVec(solder.sdm)
+    inVec   = GetInputVec(solver.sdm)
     inVec  .= 0.0
     for i in 1:n
         inVec[n + i + (i - 1)*n] = 1.0
@@ -320,7 +320,7 @@ end
 
 function fmsHomotopyNLEqFunc!(F::Union{Nothing,AbstractArray}, J::Union{Nothing,AbstractArray},
     x::AbstractArray, ϵ, bvpFuncNoSTM, bvpFuncWSTM, tspan, nSeg,
-    sdm::ShootingDataManager)
+    sdm::ShootingHomotopyDataManager)
 
     # Get data from shooting data manager
     z0 = GetInputVec(sdm)
@@ -330,8 +330,8 @@ function fmsHomotopyNLEqFunc!(F::Union{Nothing,AbstractArray}, J::Union{Nothing,
 
     # Compute times
     ts      = zeros(nSeg + 1)
-    ts[1]   = tspan[0]
-    ts[end] = tspan[1]
+    ts[1]   = tspan[1]
+    ts[end] = tspan[2]
     for i in 1:nSeg - 1
         ts[i + 1] = ts[i] + (ts[end] - ts[1]) / nSeg
     end
@@ -400,27 +400,27 @@ function fmsHomotopyNLEqFunc!(F::Union{Nothing,AbstractArray}, J::Union{Nothing,
                 xidx0 = m + (i - 2)*n + 1
                 xidxf = m + (i - 1)*n
                 fidx0 = (i - 1)*n + 1
-                fidxf = idx0 + 5
+                fidxf = fidx0 + 5
 
                 if F !== nothing
                     @views F[fidx0:fidxf] .= zf[1:6] .- fc[1:6]
                     F[end] = zf[14] - fc[7]
                 end
-                @views J[idx0:idxf+1,xidx0:xidxf] .= STM[[1,2,3,4,5,6,14], :]
+                @views J[fidx0:fidxf+1,xidx0:xidxf] .= STM[[1,2,3,4,5,6,14], :]
             else
+                xidx0 = m + (i - 2)*n + 1
+                xidxf = m + (i - 1)*n
                 fidx0 = (i - 1)*n + 1
                 fidxf = i*n
             
                 if F !== nothing
-                    @views F[fidx0:fidxf] .= zf[1:n] .- x[m + idx0:m + idxf] 
+                    @views F[fidx0:fidxf] .= zf[1:n] .- x[xidx0 + n:xidxf + n] 
                 end
 
                 # STM terms 
                 if i == 1
-                    @views J[1:14,1:7] .= STM[:, [8:14]]
+                    @views J[1:14,1:7] .= STM[:, 8:14]
                 else
-                    xidx0 = m + (i - 2)*n + 1
-                    xidxf = m + (i - 1)*n
                     @views J[fidx0:fidxf,xidx0:xidxf] .= STM
                 end
 
